@@ -8,7 +8,7 @@ from modules.common.store import get_bat_value_store
 from modules.devices.senec.senec.config import SenecBatSetup
 
 class SenecBat:
-    def init(self, device_id: int, component_config: SenecBatSetup) -> None:
+    def __init__(self, device_id: int, component_config: SenecBatSetup) -> None:
         self.device_id = device_id
         self.component_config = dataclass_from_dict(SenecBatSetup, component_config)
         self.store = get_bat_value_store(self.component_config.id)
