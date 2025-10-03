@@ -41,12 +41,14 @@ def create_device(device_config: Senec) -> ConfigurableDevice:
          #                    get_device_generation(device_config.configuration.ip_address))
 
     def update_components(components: Iterable[Union[SenecBat, SenecCounter, SenecInverter]]):
+        log.debug("Senec.update_components: updating %s components", len(list(components)))
         for component in components:
             with SingleComponentUpdateContext(component.fault_state):
                 component.update()
 
     def initializer():
         nonlocal api
+        log.info("Senec.initializer: creating API client for ip=%s", device_config.configuration.ip_address)
         api = Senec_Connection(device_config.configuration.ip_address)
 
     return ConfigurableDevice(

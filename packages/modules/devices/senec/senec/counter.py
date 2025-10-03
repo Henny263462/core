@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from typing import Any, Dict
+import logging
 from dataclass_utils import dataclass_from_dict
 from modules.common.component_state import CounterState
 from modules.common.component_type import ComponentDescriptor
@@ -7,6 +8,8 @@ from modules.common.fault_state import ComponentInfo, FaultState
 from modules.common.simcount import SimCounter
 from modules.common.store import get_counter_value_store
 from modules.devices.senec.senec.config import SenecCounterSetup
+
+log = logging.getLogger(__name__)
 
 
 class SenecCounter:
@@ -17,12 +20,14 @@ class SenecCounter:
     def initialize(self) -> None:
         self.__device_id: int = self._kwargs['device_id']
         self.__api = self._kwargs['api']
+        log.info("SenecCounter initialize: device_id=%s component_id=%s", self.__device_id, self.component_config.id)
         self.store = get_counter_value_store(self.component_config.id)
         self.fault_state = FaultState(ComponentInfo.from_component_config(self.component_config))
         self.component_info = ComponentInfo.from_component_config(self.component_config)
         self.sim_counter = SimCounter(self.__device_id, self.component_config.id, prefix="counter")
 
     def update(self) -> None:
+        log.debug("SenecCounter.update: fetching values from API")
         response = self.__api.get_values()
 
         currents = [round(response["PM1OBJ1"]['I_AC'][0], 2),
@@ -38,6 +43,7 @@ class SenecCounter:
                     round(response["PM1OBJ1"]['U_AC'][2], 2)]
 
         imported, exported = self.sim_counter.sim_count(power)
+        log.debug("SenecCounter.update: power=%s freq=%s imported=%s exported=%s currents=%s voltages=%s powers=%s", power, frequency, imported, exported, currents, voltages, powers)
 
         counter_state = CounterState(
             currents=currents,
@@ -49,6 +55,7 @@ class SenecCounter:
             voltages=voltages
         )
         self.store.set(counter_state)
+        log.debug("SenecCounter.update: state stored for component_id=%s", self.component_config.id)
 
 
 component_descriptor = ComponentDescriptor(configuration_factory=SenecCounterSetup)
